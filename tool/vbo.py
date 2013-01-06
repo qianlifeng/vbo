@@ -32,6 +32,10 @@ class weibo( object ):
         #print 'version===========',res.version
         location = res.getheader('location')
         #print location
+        if location is None:
+            print u'登陆微博失败，请检查用户名和密码'
+            return False
+
         code = location.split('=')[1]
         conn.close()
         #print code
@@ -43,14 +47,17 @@ class weibo( object ):
         '''
         if self.TOKEN == '':
             code = self.__getCode()
+            if code == False:
+                return
             r = self.client.request_access_token(code)
             self.TOKEN = r.access_token
             self.EXPIRES = r.expires_in
 
-        print self.TOKEN
+        #print self.TOKEN
 
         #有了access_token后，可以做任何事情了
         self.client.set_access_token(self.TOKEN, self.EXPIRES)
+        return True
 
     def send(self,text):
         '''
@@ -65,6 +72,6 @@ ACCOUNT = 'xxx'#your email address
 PASSWORD = 'xxx'     #your pw
 
 w = weibo(APP_KEY,APP_SECRET,CALLBACK_URL,ACCOUNT,PASSWORD)
-w.auth()
-w.send('在vim中发微博测试')
+if w.auth():
+    w.send('在vim中发微博测试')
 #print client.statuses.user_timeline.get()

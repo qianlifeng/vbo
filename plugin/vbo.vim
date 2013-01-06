@@ -1,20 +1,17 @@
-"避免重复加载插件
-if exists('g:loaded_vbo')
-    finish
-endif
-let g:loaded_vbo = 1
+" Script initialization {{{
+	if exists('g:vbo_loaded') || &compatible || version < 702
+		finish
+	endif
 
-if !exists('g:vbo_code')
-    echoerr 'please config g:sina_weibo_code'
-    finis
-endif
+	let g:vbo_loaded = 1
+" }}}
 
 "认证信息配置
 let g:vbo_sina_weibo_app_key = '962858254'
 let g:vbo_sina_weibo_app_secret = '77a13dbdd8b8514c812d84fd6e12a53c'
 let g:vbo_sina_weibo_app_callback = 'http://www.scottqian.com'
-let g:vbo_sina_weibo_user = 'xxx'
-let g:vbo_sina_weibo_password = 'xxx'
+let g:vbo_sina_weibo_user = 'YOUR ACCOUNT'
+let g:vbo_sina_weibo_password = 'PASSWORD'
 
 "{{{ python functions
 
@@ -327,6 +324,12 @@ class _Callable(object):
 EOF
 "}}}
 
+"{{{ import vim
+python<<EOF
+import vim
+EOF
+"}}}
+
 "{{{ vbo.py
 python<<EOF
 
@@ -360,6 +363,10 @@ class weibo( object ):
         #print 'version===========',res.version
         location = res.getheader('location')
         #print location
+        if location is None:
+            print u'Login Failed! Please Check Your Account'
+            return False
+
         code = location.split('=')[1]
         conn.close()
         #print code
@@ -371,20 +378,24 @@ class weibo( object ):
         '''
         if self.TOKEN == '':
             code = self.__getCode()
+            if code == False:
+                return
             r = self.client.request_access_token(code)
             self.TOKEN = r.access_token
             self.EXPIRES = r.expires_in
 
-        print self.TOKEN
+        #print self.TOKEN
 
         #有了access_token后，可以做任何事情了
         self.client.set_access_token(self.TOKEN, self.EXPIRES)
+        return True
 
     def send(self,text):
         '''
         发送微博
         '''
         self.client.statuses.update.post(status=text)
+
 
 EOF
 "}}}
@@ -393,7 +404,7 @@ EOF
 
 "{{{ vbo core function
 
-function! g:vbo_func_init()
+function! Vbo_func_init()
 python<<EOF
 APP_KEY = vim.eval('g:vbo_sina_weibo_app_key')
 APP_SECRET = vim.eval('g:vbo_sina_weibo_app_secret')
@@ -406,14 +417,18 @@ EOF
 endfunction
 
 "发送新浪微博
-function! g:SendSinaWeibo(content)
+function! Vbo_func_SendSinaWeibo(content)
 python<<EOF
 wbtxt = vim.eval('a:content')
-w.auth()
-w.send(wbtxt)
+if w.auth():
+	w.send(wbtxt)
+	print u'Succeed.'
 EOF
 endfunction
 
 "}}}
 
-call g:vbo_func_init()
+call Vbo_func_init()
+
+command! -nargs=1 -range WB :call Vbo_func_SendSinaWeibo(<f-args>)
+" vim: fdm=marker:noet:ts=4:sw=4:sts=4
