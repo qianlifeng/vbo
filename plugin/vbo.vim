@@ -13,6 +13,14 @@ let g:vbo_sina_weibo_app_callback = 'http://www.scottqian.com'
 let g:vbo_sina_weibo_user = 'YOUR ACCOUNT'
 let g:vbo_sina_weibo_password = 'PASSWORD'
 
+"代理设置
+"是否启用代理设置，1表示启用，0表示不启用
+let g:vbo_sina_weibo_proxy_enable = 1 
+let g:vbo_sina_weibo_proxy_http_host = '10.182.45.231'
+let g:vbo_sina_weibo_proxy_http_port = 80
+let g:vbo_sina_weibo_proxy_https_host = '10.182.45.231'
+let g:vbo_sina_weibo_proxy_https_port = 80
+
 "{{{ python functions
 
 "{{{ weibo.py
@@ -327,13 +335,12 @@ EOF
 "{{{ import vim
 python<<EOF
 import vim
+import urllib,httplib,cookielib,urllib2
 EOF
 "}}}
 
 "{{{ vbo.py
 python<<EOF
-
-import urllib,httplib,cookielib,urllib2
 
 class weibo( object ):
     def __init__(self,APP_KEY,APP_SECRET,CALLBACK_URL,ACCOUNT,PASSWORD):
@@ -347,33 +354,43 @@ class weibo( object ):
         self.TOKEN = ''
         self.EXPIRES = -1
 
-		#set proxy info
-        cj = cookielib.CookieJar()
-        proxies = {"http":"host:80","https":"host:80"}
-        self.opener = urllib2.build_opener(urllib2.ProxyHandler(proxies),urllib2.HTTPCookieProcessor(cj))
-        urllib2.install_opener(self.opener)
-        self.opener.addheaders = [('User-agent', 'IE')]
+
+		#是否启用代理
+        self.PROXY_ENABLED = vim.eval('g:vbo_sina_weibo_proxy_enable')
+        self.PROXY_HTTP_HOST = vim.eval('g:vbo_sina_weibo_proxy_http_host')
+        self.PROXY_HTTP_PORT = vim.eval('g:vbo_sina_weibo_proxy_http_port')
+        self.PROXY_HTTPS_HOST = vim.eval('g:vbo_sina_weibo_proxy_https_host')
+        self.PROXY_HTTPS_PORT= vim.eval('g:vbo_sina_weibo_proxy_https_port')
+        if self.PROXY_ENABLED == '1':
+            cj = cookielib.CookieJar()
+            proxies = {"http":self.PROXY_HTTP_HOST+':'+self.PROXY_HTTP_PORT,"https":self.PROXY_HTTPS_HOST+':'+self.PROXY_HTTPS_PORT}
+            self.opener = urllib2.build_opener(urllib2.ProxyHandler(proxies),urllib2.HTTPCookieProcessor(cj))
+            urllib2.install_opener(self.opener)
+            self.opener.addheaders = [('User-agent', 'IE')]
 
     def __getCode(self):
         '''
         自动获得认证码
         '''
         url = self.client.get_authorize_url()
-        conn = httplib.HTTPSConnection('host',80)
-        conn.set_tunnel('api.weibo.com',443)
+        if self.PROXY_ENABLED:
+            conn = httplib.HTTPSConnection(self.PROXY_HTTPS_HOST,self.PROXY_HTTPS_PORT)
+            conn.set_tunnel('api.weibo.com',443)
+        else:
+            conn = httplib.HTTPSConnection('api.weibo.com')
         conn.connect()
         postdata = urllib.urlencode({'client_id':self.APP_KEY,'response_type':'code','redirect_uri':self.CALLBACK_URL,'action':'submit','userId':self.ACCOUNT,'passwd':self.PASSWORD,'isLoginSina':0,'from':'','regCallback':'','state':'','ticket':'','withOfficalFlag':0})
         conn.request('POST','/oauth2/authorize',postdata,{'Referer':url,'Content-Type': 'application/x-www-form-urlencoded'})
         res = conn.getresponse()
-        print 'headers===========',res.getheaders()
-        print 'msg===========',res.msg
-        print 'status===========',res.status
-        print 'reason===========',res.reason
-        print 'version===========',res.version
+		#print 'headers===========',res.getheaders()
+		#print 'msg===========',res.msg
+		#print 'status===========',res.status
+		#print 'reason===========',res.reason
+		#print 'version===========',res.version
         location = res.getheader('location')
         print location
         if location is None:
-            print u'登陆微博失败，请检查用户名和密码'
+            print u'login failed,please check your account'
             return False
 
         code = location.split('=')[1]
@@ -388,15 +405,13 @@ class weibo( object ):
         if self.TOKEN == '':
             code = self.__getCode()
             if code == False:
-                return
+                return False
             r = self.client.request_access_token(code)
             self.TOKEN = r.access_token
             self.EXPIRES = r.expires_in
-
-        #print self.TOKEN
-
-        #有了access_token后，可以做任何事情了
-        self.client.set_access_token(self.TOKEN, self.EXPIRES)
+            #print self.TOKEN
+            #有了access_token后，可以做任何事情了
+            self.client.set_access_token(self.TOKEN, self.EXPIRES)
         return True
 
     def send(self,text):

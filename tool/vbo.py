@@ -16,7 +16,7 @@ class weibo( object ):
         self.TOKEN = ''
         self.EXPIRES = -1
         cj = cookielib.CookieJar()
-        proxies = {"http":"host","https":"host"}
+        proxies = {"http":"10.182.45.231:80","https":"10.182.45.231:80"}
         self.opener = urllib2.build_opener(urllib2.ProxyHandler(proxies),urllib2.HTTPCookieProcessor(cj))
         urllib2.install_opener(self.opener)
         self.opener.addheaders = [('User-agent', 'IE')]
@@ -26,7 +26,7 @@ class weibo( object ):
         自动获得认证码
         '''
         url = self.client.get_authorize_url()
-        conn = httplib.HTTPSConnection('host',80)
+        conn = httplib.HTTPSConnection('10.182.45.231',80)
         conn.set_tunnel('api.weibo.com',443)
         conn.connect()
         postdata = urllib.urlencode({'client_id':self.APP_KEY,'response_type':'code','redirect_uri':self.CALLBACK_URL,'action':'submit','userId':self.ACCOUNT,'passwd':self.PASSWORD,'isLoginSina':0,'from':'','regCallback':'','state':'','ticket':'','withOfficalFlag':0})
