@@ -333,7 +333,7 @@ EOF
 "{{{ vbo.py
 python<<EOF
 
-import urllib,httplib
+import urllib,httplib,cookielib,urllib2
 
 class weibo( object ):
     def __init__(self,APP_KEY,APP_SECRET,CALLBACK_URL,ACCOUNT,PASSWORD):
@@ -347,24 +347,33 @@ class weibo( object ):
         self.TOKEN = ''
         self.EXPIRES = -1
 
+		#set proxy info
+        cj = cookielib.CookieJar()
+        proxies = {"http":"host:80","https":"host:80"}
+        self.opener = urllib2.build_opener(urllib2.ProxyHandler(proxies),urllib2.HTTPCookieProcessor(cj))
+        urllib2.install_opener(self.opener)
+        self.opener.addheaders = [('User-agent', 'IE')]
+
     def __getCode(self):
         '''
         自动获得认证码
         '''
         url = self.client.get_authorize_url()
-        conn = httplib.HTTPSConnection('api.weibo.com')
+        conn = httplib.HTTPSConnection('host',80)
+        conn.set_tunnel('api.weibo.com',443)
+        conn.connect()
         postdata = urllib.urlencode({'client_id':self.APP_KEY,'response_type':'code','redirect_uri':self.CALLBACK_URL,'action':'submit','userId':self.ACCOUNT,'passwd':self.PASSWORD,'isLoginSina':0,'from':'','regCallback':'','state':'','ticket':'','withOfficalFlag':0})
         conn.request('POST','/oauth2/authorize',postdata,{'Referer':url,'Content-Type': 'application/x-www-form-urlencoded'})
         res = conn.getresponse()
-        #print 'headers===========',res.getheaders()
-        #print 'msg===========',res.msg
-        #print 'status===========',res.status
-        #print 'reason===========',res.reason
-        #print 'version===========',res.version
+        print 'headers===========',res.getheaders()
+        print 'msg===========',res.msg
+        print 'status===========',res.status
+        print 'reason===========',res.reason
+        print 'version===========',res.version
         location = res.getheader('location')
-        #print location
+        print location
         if location is None:
-            print u'Login Failed! Please Check Your Account'
+            print u'登陆微博失败，请检查用户名和密码'
             return False
 
         code = location.split('=')[1]
@@ -395,7 +404,6 @@ class weibo( object ):
         发送微博
         '''
         self.client.statuses.update.post(status=text)
-
 
 EOF
 "}}}
