@@ -380,7 +380,7 @@ class weibo( object ):
 		#print 'reason===========',res.reason
 		#print 'version===========',res.version
         location = res.getheader('location')
-        print location
+		#print location
         if location is None:
             print u'login failed,please check your account'
             return False
