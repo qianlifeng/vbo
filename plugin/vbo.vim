@@ -13,14 +13,6 @@ let g:vbo_sina_weibo_app_callback = 'http://www.scottqian.com'
 let g:vbo_sina_weibo_user = 'YOUR ACCOUNT'
 let g:vbo_sina_weibo_password = 'PASSWORD'
 
-"代理设置
-"是否启用代理设置，1表示启用，0表示不启用
-let g:vbo_sina_weibo_proxy_enable = 1 
-let g:vbo_sina_weibo_proxy_http_host = '10.182.45.231'
-let g:vbo_sina_weibo_proxy_http_port = 80
-let g:vbo_sina_weibo_proxy_https_host = '10.182.45.231'
-let g:vbo_sina_weibo_proxy_https_port = 80
-
 "{{{ python functions
 
 "{{{ weibo.py
