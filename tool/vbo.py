@@ -32,13 +32,13 @@ class weibo( object ):
         postdata = urllib.urlencode({'client_id':self.APP_KEY,'response_type':'code','redirect_uri':self.CALLBACK_URL,'action':'submit','userId':self.ACCOUNT,'passwd':self.PASSWORD,'isLoginSina':0,'from':'','regCallback':'','state':'','ticket':'','withOfficalFlag':0})
         conn.request('POST','/oauth2/authorize',postdata,{'Referer':url,'Content-Type': 'application/x-www-form-urlencoded'})
         res = conn.getresponse()
-        print 'headers===========',res.getheaders()
-        print 'msg===========',res.msg
-        print 'status===========',res.status
-        print 'reason===========',res.reason
-        print 'version===========',res.version
+        #print 'headers===========',res.getheaders()
+        #print 'msg===========',res.msg
+        #print 'status===========',res.status
+        #print 'reason===========',res.reason
+        #print 'version===========',res.version
         location = res.getheader('location')
-        print location
+        #print location
         if location is None:
             print u'登陆微博失败，请检查用户名和密码'
             return False
@@ -72,14 +72,23 @@ class weibo( object ):
         '''
         self.client.statuses.update.post(status=text)
 
+    def getFriendsWeibo(self,page):
+        '''
+        获得微博
+        '''
+        wbList = self.client.statuses.friends_timeline.get(count=100,page=page).statuses
+        return [(i.text,i.user.screen_name) for i in wbList]
+
 APP_KEY = '962858254' #youre app key 
 APP_SECRET = '77a13dbdd8b8514c812d84fd6e12a53c' #youre app secret  
 CALLBACK_URL = 'http://www.scottqian.com'
-ACCOUNT = 'mail'#your email address
-PASSWORD = 'pas'     #your pw
+ACCOUNT = ''#your email address
+PASSWORD = ''     #your pw
 
 w = weibo(APP_KEY,APP_SECRET,CALLBACK_URL,ACCOUNT,PASSWORD)
 if w.auth():
     #w.send('在vim中发微博测试')
+    for i in w.getFriendsWeibo(page=1):
+        print i[1]+':'+i[0]
     pass
 #print client.statuses.user_timeline.get()
